@@ -32,4 +32,8 @@ Our stock price analyzer will allow users to retrieve data on a stock of interes
 * Users can download the dataframe as different files depending on their needs. For instance, they can export it as a JSON or CSV for readability and storage
 
 ### **Data Analysis and Visualization Plan (written by Lila)**
-* replace me
+* Perform basic preprocessing and validation (i.e. handling missing values)
+* Compute basic statistics (mean, max, min closing price) using Pandas and NumPy
+* Create the line plots of stock trends using Matplotlib
+* Possibly include a moving average trendline to smooth out fluctuations in price using Pandas
+* Display data in a readable format using Tkinter
