@@ -33,7 +33,6 @@ Our stock price analyzer will allow users to retrieve data on a stock of interes
 
 ### **Data Analysis and Visualization Plan (written by Lila)**
 * Perform basic preprocessing and validation (i.e. handling missing values)
-* Compute basic statistics (mean, max, min closing price) using Pandas and NumPy
-* Create the line plots of stock trends using Matplotlib
-* Possibly include a moving average trendline to smooth out fluctuations in price using Pandas
-* Display data in a readable format using Tkinter
+* Compute summary statistics (i.e. mean, max, min closing price) using Pandas and NumPy
+* Create the line plots of stock trends using Matplotlib. To smooth out fluctuations in price, may include a moving average trendline using Pandas
+* Display summary statistics and visualization in a readable format using Tkinter
