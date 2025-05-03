@@ -2,7 +2,7 @@
 
 # import the tkinter package
 from tkinter import *
-import customtkinter as ctk # for modern style widgets
+import customtkinter as ctk # for the modern twist!
 import yfinance as yf
 import pandas as pd
 
@@ -63,16 +63,20 @@ class Homepage:
 
         # add label for export
         format_label = ctk.CTkLabel(mainframe, text="Select Export Format:", text_color="#565b5e")
-        format_label.grid(row=2, column=2, padx=20, pady=5)
+        format_label.grid(row=1, column=2, padx=20, pady=5)
 
         # add combo box with options of CSV or JSON
         self.format_combo = ctk.CTkComboBox(mainframe, values=["CSV", "JSON"], fg_color="#fdfaff", border_color="#ecaec5", text_color="#e26c99")  # Adjust width as needed
         self.format_combo.set("CSV")
-        self.format_combo.grid(row=3, column=2, padx=20, pady=(5,10))
+        self.format_combo.grid(row=2, column=2, padx=20, pady=(5,10))
 
         # download button to download data in chosen data format
         self.download_button = ctk.CTkButton(mainframe, text="Download", command=self.download, fg_color="#ecaec5", text_color="#fdfaff")
-        self.download_button.grid(row=4, column=2, padx=20, pady=5)
+        self.download_button.grid(row=3, column=2, padx=20, pady=5)
+
+        # add a button to close the app
+        self.close_button = ctk.CTkButton(mainframe, text="Close App", command=root.destroy, fg_color="#565b5e", text_color="#fdfaff")
+        self.close_button.grid(row=5, column=2, pady=10)
 
 
     def generate(self):
