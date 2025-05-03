@@ -8,7 +8,7 @@ import pandas as pd
 
 # set mode and theme
 ctk.set_appearance_mode("Dark")
-ctk.set_default_color_theme("dark-blue")
+ctk.set_default_color_theme("blue")
 
 class Homepage:
     def __init__(self, root):
@@ -16,7 +16,7 @@ class Homepage:
         root.title("Stock Market")
 
         # define geometry of window
-        root.geometry("500x500")
+        root.geometry("375x250")
 
         # configure root so it stretches in all directions
         root.columnconfigure(0, weight=1)
@@ -24,7 +24,7 @@ class Homepage:
 
         # add a mainframe which is sticky in all directions
         # add some padding (e.g. 5 pixels) to the frame
-        mainframe = ctk.CTkFrame(root)
+        mainframe = ctk.CTkFrame(root, fg_color="#f2deea")
         mainframe.grid(column=0, row=0, sticky="news")
 
         # weight column to expand with the window
@@ -36,44 +36,44 @@ class Homepage:
         self.summary_stats = StringVar()
 
         # add a label in the GUI for the stock ticker
-        label = ctk.CTkLabel(mainframe, text='Enter stock ticker:')
-        label.grid(column=3, row=1, padx=20, pady=5)
+        label = ctk.CTkLabel(mainframe, text='Enter Stock Ticker:', text_color="#565b5e")
+        label.grid(column=1, row=1, padx=20, pady=5)
 
         # add an Entry in the GUI for the stock ticker
-        self.entry = ctk.CTkEntry(mainframe)
-        self.entry.grid(column=3, row=2, padx=20, pady=5)
+        self.entry = ctk.CTkEntry(mainframe, textvariable=self.stock_ticker, fg_color="#fdfaff", border_color="#ecaec5", text_color="#e26c99")
+        self.entry.grid(column=1, row=2, padx=20, pady=5)
 
         # add a label in the GUI for the time range
-        label = ctk.CTkLabel(mainframe, text='Choose time range:')
-        label.grid(column=3, row=4, padx=20, pady=5)
+        label = ctk.CTkLabel(mainframe, text='Select Time Range:', text_color="#565b5e")
+        label.grid(column=1, row=3, padx=20, pady=5)
 
         # add a ComboBox to the first frame and add it to the GUI
-        self.combo = ctk.CTkComboBox(mainframe, values=['1 Day', '5 Days', '1 Month', '1 Year'])
-        self.combo.grid(column=3, row=5, padx=20, pady=5)
+        self.combo = ctk.CTkComboBox(mainframe, values=['1 Day', '5 Days', '1 Month', '1 Year'], fg_color="#fdfaff", border_color="#ecaec5", text_color="#e26c99")
+        self.combo.grid(column=1, row=4, padx=20, pady=(5,15))
 
-        # add vertical space between Button and other widgets
-        mainframe.rowconfigure(6, weight=1)
-
-        # add label for export
-        format_label = ctk.CTkLabel(mainframe, text="Select Export Format:")
-        format_label.grid(row=6, column=0, padx=(20, 5), pady=10, sticky="e")
-
-        # add combo box with options of CSV or JSON
-        self.format_combo = ctk.CTkComboBox(mainframe, values=["CSV", "JSON"], width=100)  # Adjust width as needed
-        self.format_combo.set("CSV")
-        self.format_combo.grid(row=6, column=1, padx=5, pady=10, sticky="w")
-
-        # download button to download data in chosen data format
-        self.download_button = ctk.CTkButton(mainframe, text="Download", command=self.download, width=100)
-        self.download_button.grid(row=6, column=2, pady=10)
+        # add spacing above and below Button/Widgets in 8th row
+        mainframe.rowconfigure(8, weight=1)
 
         # add a Button (atm just fetches the data)
-        self.generate_button = ctk.CTkButton(mainframe, text="Generate", command=self.generate, width=100)
-        self.generate_button.grid(row=6, column=3, pady=10)
+        self.generate_button = ctk.CTkButton(mainframe, text="Generate", command=self.generate, fg_color="#ecaec5", text_color="#fdfaff")
+        self.generate_button.grid(row=5, column=1, padx=20, pady=5)
 
-        # add a button to close the app
-        self.close_button = ctk.CTkButton(mainframe, text="Close", command=root.destroy, width=100)
-        self.close_button.grid(row=6, column=4, pady=10)
+        # add spacing above and below Button/Widgets in 8th row
+        mainframe.rowconfigure(8, weight=1)
+
+        # add label for export
+        format_label = ctk.CTkLabel(mainframe, text="Select Export Format:", text_color="#565b5e")
+        format_label.grid(row=2, column=2, padx=20, pady=5)
+
+        # add combo box with options of CSV or JSON
+        self.format_combo = ctk.CTkComboBox(mainframe, values=["CSV", "JSON"], fg_color="#fdfaff", border_color="#ecaec5", text_color="#e26c99")  # Adjust width as needed
+        self.format_combo.set("CSV")
+        self.format_combo.grid(row=3, column=2, padx=20, pady=(5,10))
+
+        # download button to download data in chosen data format
+        self.download_button = ctk.CTkButton(mainframe, text="Download", command=self.download, fg_color="#ecaec5", text_color="#fdfaff")
+        self.download_button.grid(row=4, column=2, padx=20, pady=5)
+
 
     def generate(self):
         # change ticker to uppercase and get the selected range form the combo box 
