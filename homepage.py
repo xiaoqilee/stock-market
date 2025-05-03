@@ -3,6 +3,8 @@
 # import the tkinter package
 from tkinter import *
 import customtkinter as ctk # for modern style widgets
+import yfinance as yf
+import pandas as pd
 
 # set mode and theme
 ctk.set_appearance_mode("Dark")
@@ -23,7 +25,7 @@ class Homepage:
         # add a mainframe which is sticky in all directions
         # add some padding (e.g. 5 pixels) to the frame
         mainframe = ctk.CTkFrame(root)
-        mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
+        mainframe.grid(column=0, row=0, sticky="news")
 
         # weight column to expand with the window
         mainframe.columnconfigure(0, weight=1)
@@ -35,27 +37,95 @@ class Homepage:
 
         # add a label in the GUI for the stock ticker
         label = ctk.CTkLabel(mainframe, text='Enter stock ticker:')
-        label.grid(column=0, row=1, padx=20, pady=5)
+        label.grid(column=3, row=1, padx=20, pady=5)
 
         # add an Entry in the GUI for the stock ticker
-        entry = ctk.CTkEntry(mainframe)
-        entry.grid(column=0, row=2, padx=20, pady=5)
+        self.entry = ctk.CTkEntry(mainframe)
+        self.entry.grid(column=3, row=2, padx=20, pady=5)
 
         # add a label in the GUI for the time range
         label = ctk.CTkLabel(mainframe, text='Choose time range:')
-        label.grid(column=0, row=4, padx=20, pady=5)
+        label.grid(column=3, row=4, padx=20, pady=5)
 
         # add a ComboBox to the first frame and add it to the GUI
-        combo = ctk.CTkComboBox(mainframe, values=['1 Day', '5 Days', '1 Month', '1 Year'])
-        combo.grid(column=0, row=5, padx=20, pady=5)
+        self.combo = ctk.CTkComboBox(mainframe, values=['1 Day', '5 Days', '1 Month', '1 Year'])
+        self.combo.grid(column=3, row=5, padx=20, pady=5)
 
         # add vertical space between Button and other widgets
         mainframe.rowconfigure(6, weight=1)
 
-        # add a Button
-        button = ctk.CTkButton(mainframe, text='Generate')
-        button.grid(column=0, row=7, padx=20, pady=20)
+        # add label for export
+        format_label = ctk.CTkLabel(mainframe, text="Select Export Format:")
+        format_label.grid(row=6, column=0, padx=(20, 5), pady=10, sticky="e")
 
+        # add combo box with options of CSV or JSON
+        self.format_combo = ctk.CTkComboBox(mainframe, values=["CSV", "JSON"], width=100)  # Adjust width as needed
+        self.format_combo.set("CSV")
+        self.format_combo.grid(row=6, column=1, padx=5, pady=10, sticky="w")
+
+        # download button to download data in chosen data format
+        self.download_button = ctk.CTkButton(mainframe, text="Download", command=self.download, width=100)
+        self.download_button.grid(row=6, column=2, pady=10)
+
+        # add a Button (atm just fetches the data)
+        self.generate_button = ctk.CTkButton(mainframe, text="Generate", command=self.generate, width=100)
+        self.generate_button.grid(row=6, column=3, pady=10)
+
+        # add a button to close the app
+        self.close_button = ctk.CTkButton(mainframe, text="Close", command=root.destroy, width=100)
+        self.close_button.grid(row=6, column=4, pady=10)
+
+    def generate(self):
+        # change ticker to uppercase and get the selected range form the combo box 
+        self.ticker = self.entry.get().upper() 
+        time_range = self.combo.get()
+
+        # assign a period and interval based on the time range selected
+        if time_range == '1 Day':
+            period = '1d'
+            frequency = '5m'  
+        elif time_range == '5 Days':
+            period = '5d'
+            frequency = '30m' 
+        elif time_range == '1 Month':
+            period = '1mo'
+            frequency = '4h'
+        elif time_range == '1 Year':
+            period = '1y'
+            frequency = '1wk'
+        else:
+            period = '1d'
+            frequency = '5m' 
+
+        # get the data from yahoo finance
+        try:
+            self.data = yf.download(self.ticker, period=period, interval=frequency) # download data from yf as a pd df
+            self.stats(self.ticker, self.data)
+        except Exception as e:
+                pass
+        
+    # open new window for stats
+    def stats(self, ticker, data):
+        popup_window = ctk.CTkToplevel()
+        popup_window.title(f"Statistics for {self.ticker}")
+        
+        ctk.CTkLabel(popup_window, text="temp").pack(padx=20, pady=20)
+
+        label = ctk.CTkLabel(popup_window, text="Temp placeholder")
+        label.grid(column=0, row=2, sticky="news")
+
+    # download as csv or json into current directory based on chosen data format
+    def download(self):
+        data_format = self.format_combo.get()
+        filename = "{} stock data.{}".format(self.ticker, data_format.lower())
+
+        try:
+            if data_format == "CSV":
+                self.data.to_csv(filename)
+            elif data_format == "JSON":
+                self.data.to_json(filename, orient='records')
+        except Exception as e:
+            pass
 
 # create a root Tk object
 root = ctk.CTk()
