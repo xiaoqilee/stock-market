@@ -3,6 +3,7 @@
 # import the tkinter package
 from tkinter import *
 import customtkinter as ctk # for the modern twist!
+from CTkMessagebox import CTkMessagebox
 import yfinance as yf
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -15,7 +16,7 @@ ctk.set_default_color_theme("blue")
 class Homepage:
     def __init__(self, root):
         # add title to window
-        root.title("Stock Market")
+        root.title("Stock Market Homepage")
 
         # define geometry of window
         root.geometry("375x250")
@@ -38,7 +39,7 @@ class Homepage:
         self.stats = StringVar()
 
         # add a label in the GUI for the stock ticker
-        ticker_label = ctk.CTkLabel(mainframe, text='Enter Stock Ticker:', text_color="#323339")
+        ticker_label = ctk.CTkLabel(mainframe, text='Enter Stock Ticker(s):', text_color="#323339")
         ticker_label.grid(column=1, row=1, padx=20, pady=5, sticky="w")
 
         # add an Entry in the GUI for the stock ticker
@@ -56,7 +57,7 @@ class Homepage:
                                      fg_color="#fdfaff", border_color="#ecaec5", text_color="#e26c99")
         self.combo.grid(column=1, row=4, padx=20, pady=(5,15))
 
-        # add a Button (atm just fetches the data)
+        # add a Button that fetches the stock data
         self.generate_button = ctk.CTkButton(mainframe, text="Generate", command=self.generate,
                                              fg_color="#ecaec5", text_color="#fdfaff")
         self.generate_button.grid(row=5, column=1, padx=20, pady=5)
@@ -89,38 +90,50 @@ class Homepage:
         curr_ticker = self.ticker.get()
         self.ticker.set(curr_ticker.upper())
 
-
+    '''
+    This method gets the data from yfinance based on the inputted time range
+    '''
     def generate(self):
-        # change ticker to uppercase and get the selected range form the combo box 
-        self.ticker = self.entry.get()
+        # change ticker to uppercase and get the selected range form the combo box   
+        ticker_input = self.entry.get()
+        split_tickers = ticker_input.split(',')
+        self.tickers = []
+        for ticker in split_tickers:
+            self.tickers.append(ticker.strip())
+       
         time_range = self.combo.get()
 
         # assign a period and interval based on the time range selected
         if time_range == '1 Day':
             period = '1d'
-            frequency = '5m'  
+            self.frequency = '5m'  
         elif time_range == '5 Days':
             period = '5d'
-            frequency = '30m' 
+            self.frequency = '30m' 
         elif time_range == '1 Month':
             period = '1mo'
-            frequency = '4h'
+            self.frequency = '4h'
         elif time_range == '1 Year':
             period = '1y'
-            frequency = '1wk'
+            self.frequency = '1wk'
         else:
             period = '1d'
-            frequency = '5m' 
+            self.frequency = '5m' 
 
         # get the data from yahoo finance
         try:
             # download data from yf as a pd df
-            self.data = yf.download(self.ticker, period=period, interval=frequency)
-            self.graph_and_stats(self.ticker, self.data)
+            self.data = yf.download(self.tickers, period=period, interval=self.frequency)
+            if self.data.empty:
+                CTkMessagebox(title="Error Message", message="The stock tickers entered are invalid. Please try again.", icon="warning")
+                return
+            else:
+                CTkMessagebox(title="Success", message="Data has been loaded", icon="check")
+
+            # self.graph_and_stats(self.ticker, self.data)
         except Exception as e:
-                pass
-
-
+                CTkMessagebox(title="Error Message", message="Request could not be processed due to: {}".format(e), icon="warning")
+    '''
     # open new window for graph and summary statistics
     def graph_and_stats(self, ticker, data):
         popup_window = ctk.CTkToplevel()
@@ -217,27 +230,53 @@ class Homepage:
 
         except Exception as e:
             print("Error plotting data:", e)
-
-
+ 
         # add a button to close the window
         self.close_button = ctk.CTkButton(popup_window, text="Close Window", command=popup_window.destroy,
                                           fg_color="#debbe7", text_color="#fdfaff")
         self.close_button.grid(column=1, row=8, padx=20, pady=10, sticky="e")
-
+    '''
 
     # download as csv or json into current directory based on chosen data format
     def download(self):
-        data_format = self.format_combo.get()
-        filename = "{} stock data.{}".format(self.ticker, data_format.lower())
-
         try:
-            if data_format == "CSV":
-                self.data.to_csv(filename)
-            elif data_format == "JSON":
-                self.data.to_json(filename, orient='records')
-        except Exception as e:
-            pass
+            if self.data.empty:
+                CTkMessagebox(title="Error Message", message="Data cannot be downloaded. Ensure data has been generated and is valid.", icon="warning")
+                return
+        except AttributeError:
+            CTkMessagebox(title="Error Message", message="Data cannot be downloaded. Ensure data has been generated and is valid.", icon="warning")
+            return
 
+        data_format = self.format_combo.get()
+        time_range = self.combo.get().lower().replace(" ", "_")
+
+        # if only one ticker was entered
+        if len(self.tickers) == 1:
+            t = self.tickers[0]
+            filename = "{}_{} ({} freq)_data.{}".format(t, time_range, self.frequency, data_format.lower())
+            try:         
+                # Retrieve all columns for the specified ticker       
+                ticker_data = self.data.xs(t, level=1, axis=1)
+                if data_format == "CSV":
+                    ticker_data.to_csv(filename)
+                elif data_format == "JSON":
+                    ticker_data.to_json(filename, orient='records')
+                CTkMessagebox(title="Success", message="Data for {} has been exported".format(t), icon="check")
+            except Exception as e:
+                CTkMessagebox(title="Error Message", message="Request could not be processed due to: {}".format(e), icon="warning")
+        else:
+            # if multiple tickers are entered
+            for t in self.tickers:
+                filename = "{}_{} ({} freq)_data.{}".format(t, time_range, self.frequency, data_format.lower())
+                try:
+                    ticker_data = self.data.xs(t, level=1, axis=1)
+                    if data_format == "CSV":
+                        ticker_data.to_csv(filename)
+                    elif data_format == "JSON":
+                        ticker_data.to_json(filename, orient='records')
+                    CTkMessagebox(title="Success", message="Data for {} has been exported".format(t), icon="check")
+                except Exception as e:
+                    CTkMessagebox(title="Error Message", message=f"Could not save data for {t}: {e}", icon="warning")
 
 # create a root Tk object
 root = ctk.CTk()
