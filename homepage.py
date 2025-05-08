@@ -232,23 +232,25 @@ class Homepage:
 
                 # plot the moving average
                 ax.plot(ma, label=ma_label, color=ma_colors[i%len(ma_colors)], linestyle='--')
-
+            
                 # annotate max and min closing prices
+                offset = (max_val - min_val) * 0.10
                 ax.scatter(max_time, max_val, color='red')
                 ax.annotate('Max',
                             xy=(max_time, max_val), # point that arrow points to
-                            xytext=(max_time, max_val+0.5), # point for tail of arrow
+                            xytext=(max_time, max_val+offset), # point for tail of arrow
                             arrowprops=dict(facecolor='red', color='red', arrowstyle='->')) # arrow's appearance
 
                 ax.scatter(min_time, min_val, color='blue')
                 ax.annotate('Min',
                             xy=(min_time, min_val), # point that arrow points to
-                            xytext=(min_time, min_val-0.5), # point for tail of arrow
+                            xytext=(min_time, min_val-offset), # point for tail of arrow
                             arrowprops=dict(facecolor='blue', color='blue', arrowstyle='->')) # arrow's appearance
+             
             except Exception as e:
                 print("Error computing stats: ", e)
                 continue
-
+            
         # dynamically adjust y-axis to reflect data in different ranges
         y_min, y_max = min(all_prices), max(all_prices)
         y_padding = (y_max-y_min)*0.1
