@@ -5,9 +5,10 @@ from tkinter import *
 import customtkinter as ctk # for the modern twist!
 from CTkMessagebox import CTkMessagebox
 import yfinance as yf
+import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.figure import Figure
+import matplotlib.dates as mdates
 
 # set mode and theme
 ctk.set_appearance_mode("Dark")
@@ -19,7 +20,7 @@ class Homepage:
         root.title("Stock Market Homepage")
 
         # define geometry of window
-        root.geometry("375x250")
+        root.geometry("365x225")
 
         # configure root so it stretches in all directions
         root.columnconfigure(0, weight=1)
@@ -100,6 +101,13 @@ class Homepage:
         self.tickers = []
         for ticker in split_tickers:
             self.tickers.append(ticker.strip())
+
+        # check to see if User entered more than 3 tickers
+        if len(self.tickers) > 3:
+            CTkMessagebox(title="Invalid Number of Tickers",
+                          message="Please enter no more than 3 tickers, separated by commas.",
+                          icon="warning")
+            return
        
         time_range = self.combo.get()
 
@@ -125,126 +133,175 @@ class Homepage:
             # download data from yf as a pd df
             self.data = yf.download(self.tickers, period=period, interval=self.frequency)
             if self.data.empty:
-                CTkMessagebox(title="Error Message", message="The stock tickers entered are invalid. Please try again.", icon="warning")
+                CTkMessagebox(title="Invalid Stock Ticker",
+                              message="Ensure stock tickers are spelt correctly and separated by a comma.",
+                              icon="warning")
                 return
-            else:
-                CTkMessagebox(title="Success", message="Data has been loaded", icon="check")
-
-            # self.graph_and_stats(self.ticker, self.data)
+            self.graph_and_stats(self.tickers, self.data)
         except Exception as e:
-                CTkMessagebox(title="Error Message", message="Request could not be processed due to: {}".format(e), icon="warning")
-    '''
-    # open new window for graph and summary statistics
-    def graph_and_stats(self, ticker, data):
-        popup_window = ctk.CTkToplevel()
+                CTkMessagebox(title="Error Message", message="Request could not be processed due to: {}".format(e),
+                              icon="warning")
 
+
+    # open new window for graph and summary statistics
+    def graph_and_stats(self, ticker_list, data):
         # set title, size, and bg color of popup window
-        popup_window.title(f"Graph & Summary Stats for {self.ticker}")
-        popup_window.geometry("440x650")
+        popup_window = ctk.CTkToplevel()
+        popup_window.title("Graph & Summary Stats")
+        popup_window.geometry("800x625") # (width, height)
         popup_window.configure(fg_color="#e6d8f3")
 
         # set font styles
-        title_style = ("TkDefaultFont", 14, "bold")
-        headers_style = ("TkDefaultFont", 12, "bold")
-        values_style = ("TkDefaultFont", 12)
+        title_style = ("TkDefaultFont", 12, "bold")
+        headers_style = ("TkDefaultFont", 11, "bold")
+        values_style = ("TkDefaultFont", 11)
 
-        # get summary stats (mean, max, min closing price)
-        try:
-            mean_close_price = "{:.2f}".format(data["Close", ticker].mean())
-            max_close_price = "{:.2f}".format(data["Close", ticker].max())
-            min_close_price = "{:.2f}".format(data["Close", ticker].min())
-        except Exception as e:
-            print("Error computing summary stats: ", e)
-
-        # create labels for summary stats
         time_range = self.combo.get()
-        label = ctk.CTkLabel(popup_window, text="Closing Price Summary ("+time_range+")",
-                             text_color="#764c9f", font=title_style)
-        label.grid(row=2, column=0, padx=20, pady=10, sticky="w")
 
-        mean_label = ctk.CTkLabel(popup_window, text="Mean Price:", text_color="#323339",
-                                  font=headers_style)
-        mean_label.grid(row=3, column=0, padx=20, pady=5, sticky="w")
+        # create one plot
+        stock_fig, ax = plt.subplots(figsize=(6, 4))
+        line_colors = ['black', 'blue', 'purple']
+        ma_colors = ['orange', 'cyan', 'yellow']
+        x_label = 'Date'
 
-        max_label = ctk.CTkLabel(popup_window, text="Max Price:", text_color="#323339",
-                                 font=headers_style)
-        max_label.grid(row=4, column=0, padx=20, pady=5, sticky="w")
+        # track min/max values of all stocks
+        all_prices = []
 
-        min_label = ctk.CTkLabel(popup_window, text="Min Price:", text_color="#323339",
-                                 font=headers_style)
-        min_label.grid(row=5, column=0, padx=20, pady=5, sticky="w")
+        # iterate through list
+        for i, ticker in enumerate(ticker_list):
+            try:
+                prices = data["Close", ticker]
+                all_prices.extend(prices)
 
-        # assign values to the respective labels
-        mean_val = ctk.CTkLabel(popup_window, text='$'+mean_close_price, text_color="#323339",
-                                font=values_style)
-        mean_val.grid(row=3, column=1, padx=20, pady=5, sticky="w")
+                # get summary stats (mean, max, min closing price)
+                mean_val = prices.mean()
+                max_val = prices.max()
+                min_val = prices.min()
+                max_time = prices.idxmax() # time corresponding to max point
+                min_time = prices.idxmin() # time corresponding to min point
 
-        max_val = ctk.CTkLabel(popup_window, text='$'+max_close_price, text_color="#323339",
-                               font=values_style)
-        max_val.grid(row=4, column=1, padx=20, pady=5, sticky="w")
+                # summary stats (str)
+                mean_close_price = "{:.2f}".format(mean_val)
+                max_close_price = "{:.2f}".format(max_val)
+                min_close_price = "{:.2f}".format(min_val)
 
-        min_val = ctk.CTkLabel(popup_window, text='$'+min_close_price, text_color="#323339",
-                               font=values_style)
-        min_val.grid(row=5, column=1, padx=20, pady=5, sticky="w")
+                new_col = i*2
 
-        # graph stock plot
-        try:
-            prices = data["Close", ticker]
+                # header
+                header_label = ctk.CTkLabel(popup_window,
+                                            text="{} Closing Summary ({})".format(ticker, time_range),
+                                            text_color="#764c9f",
+                                            font=title_style)
+                header_label.grid(row=0, column=new_col, columnspan=2, padx=10, pady=(10,5), sticky="w")
 
-            # calculate moving averages
-            ma_20 = prices.rolling(20).mean() # for 1 Day & 1 Year
-            ma_10 = prices.rolling(10).mean() # for 5 Days
-            ma_5 = prices.rolling(5).mean()  # for 1 Month
+                # summary stats
+                stats = [("Mean Price:", mean_close_price),
+                         ("Max Price:", max_close_price),
+                         ("Min Price:", min_close_price),]
 
-            stock_fig, ax = plt.subplots(figsize=(4, 3.5))
-            ax.plot(prices, label=ticker+" Close", color="black")
+                # organize summary stats side-by-side
+                for j, (type, val) in enumerate(stats, start=1):
+                    type_label = ctk.CTkLabel(popup_window,
+                                              text=type,
+                                              text_color="#323339",
+                                              font=headers_style)
+                    type_label.grid(row=j+1, column=new_col, padx=10, pady=3, sticky="w")
+                    val_label = ctk.CTkLabel(popup_window,
+                                             text='$'+val,
+                                             text_color="#323339",
+                                             font=values_style)
+                    val_label.grid(row=j+1, column=new_col+1, padx=10, pady=3, sticky="w")
 
-            # add moving averages (MA) based on selected time range
-            if time_range == '1 Day':
-                ax.plot(ma_20, label="20-period MA", color='orange', linestyle='--')
-                ax.set_xlabel('Time')
-            elif time_range == '5 Days':
-                ax.plot(ma_10, label="10-period MA", color='orange', linestyle='--')
-                ax.set_xlabel('Date')
-            elif time_range == '1 Month':
-                ax.plot(ma_5, label="5-period MA", color='orange', linestyle='--')
-                ax.set_xlabel('Date')
-            else:
-                ax.plot(ma_20, label="20-period MA", color='orange', linestyle='--')
-                ax.set_xlabel('Date')
+                # plot closing price
+                ax.plot(prices, label="{} Close".format(ticker), color=line_colors[i%len(line_colors)])
 
-            # set title, y-axis label, legend, and grid
-            ax.set_title('{} Stock Price ({})'.format(ticker, time_range))
-            ax.set_ylabel('Closing Price ($)')
-            ax.legend()
-            ax.grid(True, alpha=0.5, linestyle='--')
+                # compute moving averages (MA) based on selected time range
+                if time_range == '1 Day':
+                    ma = prices.rolling(20).mean()
+                    ma_label = ticker+" 20-period MA"
+                    x_label = 'Time'
+                elif time_range == '5 Days':
+                    ma = prices.rolling(10).mean()
+                    ma_label = ticker+" 10-period MA"
+                elif time_range == '1 Month':
+                    ma = prices.rolling(20).mean()
+                    ma_label = ticker+" 20-period MA"
+                else:
+                    ma = prices.rolling(12).mean()
+                    ma_label = ticker+" 12-period MA"
 
-            # rotate x-axis labels
-            plt.setp(ax.get_xticklabels(), rotation=45)
-            stock_fig.tight_layout()
+                # plot the moving average
+                ax.plot(ma, label=ma_label, color=ma_colors[i%len(ma_colors)], linestyle='--')
 
-            # show plot in tkinter
-            canvas = FigureCanvasTkAgg(stock_fig, master=popup_window)
-            canvas.draw()
-            canvas.get_tk_widget().grid(row=1, column=0, columnspan=2, padx=5, pady=10)
+                # annotate max and min closing prices
+                ax.scatter(max_time, max_val, color='red')
+                ax.annotate('Max',
+                            xy=(max_time, max_val), # point that arrow points to
+                            xytext=(max_time, max_val+0.5), # point for tail of arrow
+                            arrowprops=dict(facecolor='red', color='red', arrowstyle='->')) # arrow's appearance
 
-        except Exception as e:
-            print("Error plotting data:", e)
- 
+                ax.scatter(min_time, min_val, color='blue')
+                ax.annotate('Min',
+                            xy=(min_time, min_val), # point that arrow points to
+                            xytext=(min_time, min_val-0.5), # point for tail of arrow
+                            arrowprops=dict(facecolor='blue', color='blue', arrowstyle='->')) # arrow's appearance
+            except Exception as e:
+                print("Error computing stats: ", e)
+                continue
+
+        # dynamically adjust y-axis to reflect data in different ranges
+        y_min, y_max = min(all_prices), max(all_prices)
+        y_padding = (y_max-y_min)*0.1
+        ax.set_ylim(y_min-y_padding, y_max+y_padding)
+
+        # set title, axes labels, legend, and grid
+        ax.set_title('Stock Price Comparison ({})'.format(time_range))
+        ax.set_xlabel(x_label)
+        ax.set_ylabel('Price ($)')
+        ax.legend(fontsize='small')
+        ax.grid(True, alpha=0.5, linestyle='--')
+
+        # format datetime df to be more readable when plotted :")
+        if time_range == '1 Day':
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        elif time_range == '5 Days':
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
+            ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
+        elif time_range == '1 Month':
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
+            ax.xaxis.set_major_locator(mdates.WeekdayLocator(interval=1))
+        elif time_range == '1 Year':
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %Y'))
+            ax.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
+
+        plt.setp(ax.get_xticklabels())
+        plt.tight_layout()
+
+        # show plot in tkinter window
+        canvas = FigureCanvasTkAgg(stock_fig, master=popup_window)
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=5, column=0, columnspan=6, padx=10, pady=10)
+
         # add a button to close the window
-        self.close_button = ctk.CTkButton(popup_window, text="Close Window", command=popup_window.destroy,
-                                          fg_color="#debbe7", text_color="#fdfaff")
-        self.close_button.grid(column=1, row=8, padx=20, pady=10, sticky="e")
-    '''
+        self.close_button = ctk.CTkButton(popup_window,
+                                          text="Close Window",
+                                          command=popup_window.destroy,
+                                          fg_color="#debbe7",
+                                          text_color="#fdfaff")
+        self.close_button.grid(column=0, row=8, padx=20, pady=10, sticky="w")
+
 
     # download as csv or json into current directory based on chosen data format
     def download(self):
         try:
             if self.data.empty:
-                CTkMessagebox(title="Error Message", message="Data cannot be downloaded. Ensure data has been generated and is valid.", icon="warning")
+                CTkMessagebox(title="Error Message", message="Data cannot be downloaded. Ensure data has been "
+                                                             "generated and is valid.", icon="warning")
                 return
         except AttributeError:
-            CTkMessagebox(title="Error Message", message="Data cannot be downloaded. Ensure data has been generated and is valid.", icon="warning")
+            CTkMessagebox(title="Error Message", message="Data cannot be downloaded. Ensure data has been generated "
+                                                         "and is valid.", icon="warning")
             return
 
         data_format = self.format_combo.get()
@@ -263,7 +320,8 @@ class Homepage:
                     ticker_data.to_json(filename, orient='records')
                 CTkMessagebox(title="Success", message="Data for {} has been exported".format(t), icon="check")
             except Exception as e:
-                CTkMessagebox(title="Error Message", message="Request could not be processed due to: {}".format(e), icon="warning")
+                CTkMessagebox(title="Error Message", message="Request could not be processed due to: {}".format(e),
+                              icon="warning")
         else:
             # if multiple tickers are entered
             for t in self.tickers:
@@ -274,7 +332,7 @@ class Homepage:
                         ticker_data.to_csv(filename)
                     elif data_format == "JSON":
                         ticker_data.to_json(filename, orient='records')
-                    CTkMessagebox(title="Success", message="Data for {} has been exported".format(t), icon="check")
+                    CTkMessagebox(title="Success", message="Data for {} data has been exported".format(t), icon="check")
                 except Exception as e:
                     CTkMessagebox(title="Error Message", message=f"Could not save data for {t}: {e}", icon="warning")
 
