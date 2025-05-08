@@ -134,7 +134,7 @@ class Homepage:
             self.data = yf.download(self.tickers, period=period, interval=self.frequency)
             if self.data.empty:
                 CTkMessagebox(title="Invalid Stock Ticker",
-                              message="Ensure stock tickers are spelt correctly and separated by a comma.",
+                              message="Ensure stock tickers are entered correctly and separated by a comma.",
                               icon="warning")
                 return
             self.graph_and_stats(self.tickers, self.data)
