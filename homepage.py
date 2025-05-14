@@ -5,7 +5,6 @@ from tkinter import *
 import customtkinter as ctk # for the modern twist!
 from CTkMessagebox import CTkMessagebox
 import yfinance as yf
-import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.dates as mdates
@@ -108,7 +107,7 @@ class Homepage:
                           message="Please enter no more than 3 tickers, separated by commas.",
                           icon="warning")
             return
-       
+
         time_range = self.combo.get()
 
         # assign a period and interval based on the time range selected
@@ -232,7 +231,7 @@ class Homepage:
 
                 # plot the moving average
                 ax.plot(ma, label=ma_label, color=ma_colors[i%len(ma_colors)], linestyle='--')
-            
+
                 # annotate max and min closing prices
                 offset = (max_val - min_val) * 0.10
                 ax.scatter(max_time, max_val, color='red')
@@ -338,11 +337,11 @@ class Homepage:
                 except Exception as e:
                     CTkMessagebox(title="Error Message", message=f"Could not save data for {t}: {e}", icon="warning")
 
-# create a root Tk object
+# create a root CTk object
 root = ctk.CTk()
 
-# create an AddReturn object with the Tk root object as an argument
+# create an AddReturn object with the CTk root object as an argument
 Homepage(root)
 
-# call the mainloop method on the Tk root object
+# call the mainloop method on the CTk root object
 root.mainloop()
