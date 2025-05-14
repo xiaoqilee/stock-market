@@ -36,3 +36,17 @@ Our stock price analyzer will allow users to retrieve data on a stock of interes
 * Compute summary statistics (i.e. mean, max, min closing price) using Pandas and NumPy
 * Create the line plots of stock trends using Matplotlib. To smooth out fluctuations in price, may include a moving average trendline using Pandas
 * Display summary statistics and visualization in a readable format using Tkinter
+
+## Instructions for Installation
+* Install the following libraries:
+  * `pip install yfinance`
+  * `pip install customtkinter`
+  * `pip install matplotlib`
+  * `pip install CTkMessagebox`
+* If encountering failed download/YFRateLimitError('Too Many Requests. (...)') bug for a valid ticker, try updating Python.
+  * Check what version of Python is installed on your system using `python --version`
+  * Python 3.13.1 worked for both of us
+
+## Potential future updates
+* Computing an overall trendline with polyfit for single ticker plots
+* Make sure errors are properly handled, so User doesn't have to force close the app if app suddenly freezes
